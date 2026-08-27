@@ -786,6 +786,7 @@
           var k = keys[i];
           out[k] = (data[k] !== undefined) ? data[k] : DEFAULT_DATA[k];
         }
+        out.dailyQuote = scrubQuote(out.dailyQuote); // 旧数据残留旧词，加载即清
         return out;
       }
     } catch(e) { console.warn('数据读取失败', e); }
@@ -883,7 +884,7 @@
 
     // 文案仍有效
     if (APP.quoteDate === today && hoursSince < 4) {
-      document.getElementById('daily-quote').textContent = APP.dailyQuote;
+      document.getElementById('daily-quote').textContent = scrubQuote(APP.dailyQuote);
       return;
     }
 
@@ -1594,7 +1595,7 @@
       '距经期还有' + du + '天给温馨提醒。'
     ).then(function(result) {
       if (result && du <= 3 && du >= 0) {
-        document.getElementById('daily-quote').textContent = '🤖 ' + result;
+        document.getElementById('daily-quote').textContent = scrubQuote('🤖 ' + result);
       }
     });
   }
@@ -1979,6 +1980,7 @@
     for (var i = 0; i < keys.length; i++) {
       if (payload[keys[i]] !== undefined) APP[keys[i]] = payload[keys[i]];
     }
+    if (mod === 'home' && typeof APP.dailyQuote === 'string') APP.dailyQuote = scrubQuote(APP.dailyQuote); // 云端旧数据残留旧词，应用即清
     saveData(APP); // 直写本地，不走 persistState（不回推）
     if (updatedAt) SYNC.meta[mod] = updatedAt;
     saveSyncMeta();
