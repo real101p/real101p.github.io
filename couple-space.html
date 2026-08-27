@@ -6,7 +6,7 @@
   <meta name="format-detection" content="telephone=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>🐻 小窝</title>
+  <title>🐷 小窝</title>
   <!-- Tailwind CSS CDN（国内可访问） -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase 实时同步 SDK -->
@@ -313,35 +313,8 @@
     <!-- ========== 顶部标题栏 ========== -->
     <header style="background: linear-gradient(135deg, #FF7CB9 0%, #FF9ECD 100%); padding: 16px 18px 14px; color: #FFFFFF; text-align: center; position: relative;">
       <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <!-- 自嘲熊头像（白熊+黑眼圈+不对称豆豆眼+小耳朵） -->
-        <svg width="38" height="38" viewBox="0 0 120 120" style="display:inline-block; flex-shrink:0;">
-          <!-- 圆圆的白熊头 -->
-          <ellipse cx="60" cy="68" rx="40" ry="38" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="1.2"/>
-          <!-- 小耳朵（不对称） -->
-          <ellipse cx="28" cy="34" rx="11" ry="12" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="1"/>
-          <ellipse cx="90" cy="36" rx="9" ry="10" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="1"/>
-          <ellipse cx="28" cy="34" rx="5.5" ry="6" fill="#F2EEEA"/>
-          <ellipse cx="90" cy="36" rx="4.5" ry="5" fill="#F2EEEA"/>
-          <!-- 标志性大黑眼圈 -->
-          <ellipse cx="43" cy="62" rx="14" ry="12" fill="#E8E0DA"/>
-          <ellipse cx="77" cy="60" rx="13" ry="11" fill="#E8E0DA"/>
-          <!-- 豆豆眼（小黑点+不对称） -->
-          <circle cx="40" cy="62" r="3.8" fill="#2A2A2A"/>
-          <circle cx="80" cy="60" r="3.2" fill="#2A2A2A"/>
-          <!-- 眼高光 -->
-          <circle cx="38.8" cy="60.8" r="1.2" fill="#FFFFFF"/>
-          <circle cx="78.8" cy="58.8" r="1" fill="#FFFFFF"/>
-          <!-- 粉色小腮红 -->
-          <ellipse cx="30" cy="72" rx="7" ry="4" fill="#FFC8C8" opacity="0.5"/>
-          <ellipse cx="90" cy="70" rx="6" ry="3.5" fill="#FFC8C8" opacity="0.45"/>
-          <!-- 小圆鼻 -->
-          <ellipse cx="60" cy="68" rx="4" ry="3" fill="#E0D6CC"/>
-          <!-- 小嘴（淡淡的～） -->
-          <path d="M50 76 Q60 81 70 76" stroke="#C5BEB6" fill="none" stroke-width="1.5" stroke-linecap="round"/>
-          <!-- 小短手（身体两侧各露一点） -->
-          <ellipse cx="20" cy="78" rx="8" ry="6" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8" transform="rotate(-20,20,78)"/>
-          <ellipse cx="100" cy="76" rx="7" ry="6" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8" transform="rotate(15,100,76)"/>
-        </svg>
+        <!-- 小猪头像 -->
+        <span style="font-size:32px; line-height:1;">🐷</span>
         <div style="line-height:1.2;">
           <span style="font-size: 17px; font-weight: 700; letter-spacing: 1px;">小窝</span>
           <span style="display:block; font-size:10px; opacity:0.75; font-weight:400;">我会陪你每一天</span>
@@ -363,8 +336,8 @@
 
       <!-- 相识天数 -->
       <div class="card" style="text-align:center; position:relative; overflow:hidden; padding:18px 16px;">
-        <div style="position:absolute; top:-14px; left:-12px; font-size:42px; opacity:0.1; transform:rotate(-15deg);">🐻‍❄️</div>
-        <div style="position:absolute; bottom:-10px; right:-10px; font-size:38px; opacity:0.08; transform:rotate(18deg);">🐻‍❄️</div>
+        <div style="position:absolute; top:-14px; left:-12px; font-size:42px; opacity:0.1; transform:rotate(-15deg);">🐷</div>
+        <div style="position:absolute; bottom:-10px; right:-10px; font-size:38px; opacity:0.08; transform:rotate(18deg);">🐷</div>
         <p style="color:#A0A0A0; font-size:12px; margin:0;">我们已经在一起</p>
         <p id="days-counter" style="font-size:44px; font-weight:800; color:#FF7CB9; margin:4px 0; position:relative; z-index:1;">0</p>
         <p style="color:#A0A0A0; font-size:12px; margin:0;">天啦</p>
@@ -401,46 +374,9 @@
         </div>
       </div>
 
-      <!-- 底部自嘲熊躺平插画 -->
+      <!-- 底部小猪躺平插画 -->
       <div style="text-align:center; padding:6px 0 20px; opacity:0.55;">
-        <!-- 底部自嘲熊插画：侧躺休闲姿态 -->
-        <svg width="100" height="95" viewBox="0 0 160 140">
-          <!-- 圆润身体（侧躺） -->
-          <ellipse cx="80" cy="88" rx="55" ry="38" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="1.2"/>
-          <!-- 肚皮 -->
-          <ellipse cx="78" cy="90" rx="33" ry="24" fill="#FEFCFC"/>
-          <!-- 大头 -->
-          <circle cx="72" cy="58" r="36" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="1"/>
-          <!-- 小耳朵 -->
-          <ellipse cx="42" cy="28" rx="11" ry="12" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.9"/>
-          <ellipse cx="100" cy="30" rx="9" ry="10" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.9"/>
-          <ellipse cx="42" cy="28" rx="5.5" ry="6" fill="#F2EEEA"/>
-          <ellipse cx="100" cy="30" rx="4.5" ry="5" fill="#F2EEEA"/>
-          <!-- 标志性黑眼圈 -->
-          <ellipse cx="54" cy="58" rx="13" ry="11" fill="#E8E0DA"/>
-          <ellipse cx="88" cy="56" rx="12" ry="10" fill="#E8E0DA"/>
-          <!-- 小豆豆眼 -->
-          <circle cx="51" cy="58" r="3.5" fill="#2A2A2A"/>
-          <circle cx="91" cy="56" r="3" fill="#2A2A2A"/>
-          <circle cx="49.8" cy="56.8" r="1.2" fill="#FFFFFF"/>
-          <circle cx="89.8" cy="54.8" r="1" fill="#FFFFFF"/>
-          <!-- 腮红 -->
-          <ellipse cx="40" cy="68" rx="7" ry="4" fill="#FFC8C8" opacity="0.45"/>
-          <ellipse cx="102" cy="64" rx="6" ry="3.5" fill="#FFC8C8" opacity="0.4"/>
-          <!-- 小圆鼻 -->
-          <ellipse cx="72" cy="64" rx="4" ry="3" fill="#E0D6CC"/>
-          <!-- 小嘴 -->
-          <path d="M62 72 Q72 77 82 72" stroke="#C5BEB6" fill="none" stroke-width="1.5" stroke-linecap="round"/>
-          <!-- 小短手（一前一后） -->
-          <ellipse cx="30" cy="80" rx="10" ry="7" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8" transform="rotate(-25,30,80)"/>
-          <ellipse cx="112" cy="76" rx="9" ry="7" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8" transform="rotate(20,112,76)"/>
-          <!-- 小短腿（并排趴着） -->
-          <ellipse cx="48" cy="120" rx="11" ry="7" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8"/>
-          <ellipse cx="100" cy="118" rx="10" ry="6.5" fill="#FFFFFF" stroke="#D5D0CA" stroke-width="0.8"/>
-          <!-- 脚掌肉垫 -->
-          <ellipse cx="48" cy="118" rx="6" ry="4" fill="#F8F0EC"/>
-          <ellipse cx="100" cy="116" rx="5.5" ry="3.5" fill="#F8F0EC"/>
-        </svg>
+        <span style="font-size:56px; line-height:1;">🐷</span>
         <p style="font-size:10px; color:#C0C0C0; margin:2px 0 0;">躺平中... 今天也要好好爱自己哦~</p>
       </div>
     </div>
@@ -680,7 +616,7 @@
   <div id="sync-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,244,249,0.97); z-index:300; align-items:center; justify-content:center;">
     <div style="width:100%; max-width:380px; background:#FFFFFF; border-radius:20px; padding:28px 24px; margin:0 16px; box-shadow:0 10px 40px rgba(255,124,185,0.25);">
       <div style="text-align:center; margin-bottom:16px;">
-        <div style="font-size:40px;">🐻‍❄️</div>
+        <div style="font-size:40px;">🐷</div>
         <h3 style="margin:6px 0 0; font-size:16px; color:#4A4A4A;">小窝 · 云端同步</h3>
         <p style="font-size:11px; color:#A0A0A0; margin:4px 0 0;">登录后即可与对方实时共享数据</p>
       </div>
@@ -731,23 +667,23 @@
     _currentTab: 'home'
   };
 
-  // 后备文案库（自嘲熊风格：治愈+淡淡自嘲）
+  // 后备文案库（治愈+淡淡自嘲）
   var FALLBACK_QUOTES = [
-    '今天也是「还行吧」的一天呢~ 自嘲熊觉得你已经很努力了 🐻‍❄️',
-    '累了就躺一会，反正地心引力会帮你 🐻‍❄️💤',
-    '自嘲熊说：人生嘛，差不多就行了... 但爱你这件事，要很认真 ❤️',
+    '今天也是「还行吧」的一天呢~ 你已经很努力了 🐷',
+    '累了就躺一会，反正地心引力会帮你 🐷💤',
+    '人生嘛，差不多就行了... 但爱你这件事，要很认真 ❤️',
     '今天的心情：淡淡的，但想到你就亮了一点 ✨',
-    '不想努力的时候，就学自嘲熊翻个身继续躺着 🐻‍♀️',
+    '不想努力的时候，就翻个身继续躺着 🐷',
     '世界很复杂，但小窝很温暖，这就够啦 💕',
-    '自嘲熊的人生哲学：能吃能睡，就是幸福的一天 🍙',
-    '没关系，今天搞砸的事，明天可能还会搞砸... 但那又怎样呢 🐻‍❄️',
+    '人生哲学：能吃能睡，就是幸福的一天 🍙',
+    '没关系，今天搞砸的事，明天可能还会搞砸... 但那又怎样呢 🐷',
     '你又不是人民币，不需要人人都喜欢~ 做自己就好啦 💝',
-    '自嘲熊偷偷告诉我：你笑起来的时候最好看 😊',
-    '每天起床第一句：先给自己打个气... 算了还是再睡五分钟吧 🐻',
-    '相爱就是：就算你是只废熊，我也觉得你最可爱 💖',
+    '偷偷告诉你：你笑起来的时候最好看 😊',
+    '每天起床第一句：先给自己打个气... 算了还是再睡五分钟吧 🐷',
+    '相爱就是：就算你是只小懒猪，我也觉得你最可爱 💖',
     '今天的烦恼，明天可能就想不起来了，所以别太在意 🎈',
-    '自嘲熊提醒您：该吃吃该喝喝，遇事别往心里搁 🍜',
-    '做一只快乐的废熊，也是需要天赋的呢~ 你已经很棒了 👑'
+    '提醒您：该吃吃该喝喝，遇事别往心里搁 🍜',
+    '做一只快乐的小懒猪，也是需要天赋的呢~ 你已经很棒了 👑'
   ];
 
   // 经期护理指南
@@ -1100,12 +1036,12 @@
 
       // 暖心
       var wt = '';
-      if (precipProb > 60) wt = precipProb + '%概率下雨，记得带伞！自嘲熊给你准备小雨伞~ 🌂';
-      else if (temp > 30) wt = '天热多喝水小心中暑，自嘲熊给你扇风~ 🪭';
+      if (precipProb > 60) wt = precipProb + '%概率下雨，记得带伞！给你准备小雨伞~ 🌂';
+      else if (temp > 30) wt = '天热多喝水小心中暑，给你扇风~ 🪭';
       else if (temp < 5) wt = '冷了就抱紧自己，回家煮热汤暖暖身子~ 🍲';
       else if (feelsLike - temp > 3) wt = '体感偏热穿轻薄点~ 😊';
       else if (temp - feelsLike > 3) wt = '体感比实际冷注意防风~ 🧣';
-      else wt = '天气不错适合出门走走，自嘲熊也想散步~ 🐻‍❄️💕';
+      else wt = '天气不错适合出门走走，一起去散步吧~ 🐷💕';
       document.getElementById('tip-warm').textContent = wt;
 
     }).catch(function(e) {
@@ -1141,7 +1077,7 @@
     document.getElementById('tip-clothing').textContent = '根据天气合理穿搭注意保暖~';
     document.getElementById('tip-skincare').textContent = '每日基础护肤：清洁+保湿+防晒~';
     document.getElementById('tip-tempdiff').textContent = '关注早晚温差适时添减衣物~';
-    document.getElementById('tip-warm').textContent = '自嘲熊提醒：不管什么天气，开心最重要~ 🐻‍❄️💝';
+    document.getElementById('tip-warm').textContent = '提醒：不管什么天气，开心最重要~ 🐷💝';
   }
 
   // ============================================================
@@ -1628,7 +1564,7 @@
   function fetchDPQuote() {
     if (!APP.dpApiKey) return;
 
-    var sysPrompt = '你是自嘲熊（白熊），住在一对情侣的手机小窝App里。语气温暖治愈、略带自嘲的幽默。请生成一句20-50字暖心文案。';
+    var sysPrompt = '你是一只可爱的小猪，住在一对情侣的手机小窝App里。语气温暖治愈、略带自嘲的幽默。请生成一句20-50字暖心文案。';
     var userMsg = '今天' + todayStr() + '，在一起' + daysBetween(APP.coupleStartDate, todayStr()) + '天。请生成一句暖心文案。';
 
     callDeepSeekAPI(sysPrompt, userMsg).then(function(result) {
@@ -1649,7 +1585,7 @@
     var du = daysBetween(todayStr(), pred.nextStart);
 
     callDeepSeekAPI(
-      '你是自嘲熊给经期关怀提醒30-50字温暖体贴。',
+      '你是可爱的小猪，请给经期关怀提醒30-50字温暖体贴。',
       '距经期还有' + du + '天给温馨提醒。'
     ).then(function(result) {
       if (result && du <= 3 && du >= 0) {
@@ -1710,7 +1646,7 @@
     // 云同步初始化（登录遮罩 / 实时订阅 / 全量拉取）
     try { initSync(); } catch(e) { console.error('云同步初始化失败', e); }
 
-    console.log('🐻‍❄️ 小窝 · 自嘲熊 已就绪');
+    console.log('🐷 小窝 已就绪');
     console.log('💾 数据: LocalStorage | 🌤 天气: Open-Meteo免费');
     console.log('🤖 AI: DeepSeek (在设置中填入Key)');
   }
@@ -2121,7 +2057,7 @@
   // ============================================================
   console.log(
     '╔══════════════════════════════════╗\n' +
-    '║   🐻‍❄️ 小窝 · 自嘲熊    ║\n' +
+    '║   🐷 小窝            ║\n' +
     '║                                ║\n' +
     '║  📱 手机/微信直接打开即用     ║\n' +
     '║  💾 数据存浏览器不丢失        ║\n' +
