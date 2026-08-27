@@ -844,7 +844,7 @@
   function persistState(mod) {
     saveData(APP);
     // 传了模块名才推送到云端（无参 = 纯本地保存，如 _lastWeather 等本机状态）
-    if (mod && !SYNC.applyingRemote) SYNC.queuePush(mod);
+    if (mod && !SYNC.applyingRemote) queuePush(mod);
   }
 
   // ============================================================
@@ -1510,7 +1510,7 @@
       SYNC.client.from('nest_data').delete().in('id', MODULE_IDS).then(function() {
         SYNC.meta = {};
         saveSyncMeta();
-        for (var i = 0; i < MODULE_IDS.length; i++) SYNC.queuePush(MODULE_IDS[i]);
+        for (var i = 0; i < MODULE_IDS.length; i++) queuePush(MODULE_IDS[i]);
         flushPushes();
       }).catch(function() {});
     }
@@ -1683,7 +1683,8 @@
     pending: {},         // 待推送模块集合
     meta: {},            // 模块 -> 服务端 updated_at
     debounceTimer: null,
-    retryTimer: null
+    retryTimer: null,
+    pollTimer: null
   };
 
   /** 本机云配置读写（密码永不落盘） */
@@ -1846,6 +1847,7 @@
         SYNC.isSignedIn = false;
         setBadge(null);
         if (SYNC.channel) { SYNC.client.removeChannel(SYNC.channel); SYNC.channel = null; }
+        if (SYNC.pollTimer) { clearInterval(SYNC.pollTimer); SYNC.pollTimer = null; }
         showOverlay('login');
       }
     });
@@ -1951,9 +1953,11 @@
     }
   }
 
-  /** 实时订阅（private channel，RLS 下需登录态） */
+  /** 实时订阅（private channel，RLS 下需登录态）；通道不通时由轮询兜底 */
   function startRealtime() {
-    if (!SYNC.client || !SYNC.isSignedIn || SYNC.channel) return;
+    if (!SYNC.client || !SYNC.isSignedIn) return;
+    startPolling(); // WebSocket 被网络拦截时的兜底
+    if (SYNC.channel) return;
     SYNC.channel = SYNC.client
       .channel('nest_sync', { config: { private: true } })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nest_data' }, function(payload) {
@@ -1962,10 +1966,21 @@
         if (!row || MODULE_IDS.indexOf(row.id) < 0) return;
         applyRemoteModule(row.id, row.payload, row.updated_at);
       })
-      .subscribe(function(status) {
+      .subscribe(function(status, err) {
         if (status === 'SUBSCRIBED') setBadge('ok');
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setBadge('off');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[云同步] 实时通道不可用（' + status + '），已降级为轮询模式', err);
+          setBadge('off');
+        }
       });
+  }
+
+  /** 轮询兜底：实时通道不通时，每 15 秒全量拉取一次 */
+  function startPolling() {
+    if (SYNC.pollTimer) return;
+    SYNC.pollTimer = setInterval(function() {
+      if (SYNC.isSignedIn) fullPull();
+    }, 15000);
   }
 
   /** 远端变更应用到本地（不回推，防回环） */
@@ -2005,6 +2020,7 @@
     }
     SYNC.client.from('nest_data').upsert(rows, { onConflict: 'id' }).select('id, updated_at').then(function(res) {
       if (res.error) {
+        console.warn('[云同步] 推送失败', res.error);
         for (var k = 0; k < rows.length; k++) SYNC.pending[rows[k].id] = true;
         setBadge('off');
         if (SYNC.retryTimer) clearTimeout(SYNC.retryTimer);
@@ -2015,7 +2031,8 @@
       for (var j = 0; j < data.length; j++) SYNC.meta[data[j].id] = data[j].updated_at;
       saveSyncMeta();
       setBadge('ok');
-    }).catch(function() {
+    }).catch(function(e) {
+      console.warn('[云同步] 推送网络错误', e);
       for (var m = 0; m < rows.length; m++) SYNC.pending[rows[m].id] = true;
       setBadge('off');
     });
@@ -2025,7 +2042,7 @@
   function fullPull() {
     if (!SYNC.isSignedIn || !SYNC.client) return;
     SYNC.client.from('nest_data').select('id, payload, updated_at').then(function(res) {
-      if (res.error) { setBadge('off'); return; }
+      if (res.error) { console.warn('[云同步] 拉取失败', res.error); setBadge('off'); return; }
       var rows = res.data || [];
       var byId = {};
       for (var i = 0; i < rows.length; i++) byId[rows[i].id] = rows[i];
@@ -2035,12 +2052,12 @@
         var row = byId[mod];
         if (!row) {
           // 云端还没有该模块：本地有数据则推上去
-          if (!isDefaultModule(mod)) { SYNC.queuePush(mod); needPush = true; }
+          if (!isDefaultModule(mod)) { queuePush(mod); needPush = true; }
           continue;
         }
         if (!SYNC.meta[mod] && !isDefaultModule(mod) && isPayloadEmpty(mod, row.payload)) {
           // 本机第一次同步该模块、本地有数据、云端是空行 -> 本地胜出，推上去
-          SYNC.queuePush(mod); needPush = true;
+          queuePush(mod); needPush = true;
           continue;
         }
         if (SYNC.meta[mod] && row.updated_at <= SYNC.meta[mod]) continue; // 不是新数据
