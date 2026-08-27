@@ -9,6 +9,8 @@
   <title>🐻 小窝</title>
   <!-- Tailwind CSS CDN（国内可访问） -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase 实时同步 SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -330,6 +332,8 @@
           <span style="display:block; font-size:10px; opacity:0.75; font-weight:400;">我会陪你每一天</span>
         </div>
       </div>
+      <!-- 同步状态徽章 -->
+      <span id="sync-badge" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:10px; color:#FFFFFF; opacity:0.9; letter-spacing:0.5px; display:none;">● 已同步</span>
       <!-- 设置 -->
       <button onclick="openSettings()" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.22); border:none; color:#FFFFFF; width:32px; height:32px; border-radius:50%; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:rgba(255,255,255,0.2);">⚙️</button>
     </header>
@@ -596,6 +600,18 @@
           <input type="password" id="setting-weather-key" placeholder="默认使用免费Open-Meteo，无需填写" style="width:100%;padding:10px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:14px;margin-top:2px;outline:none;box-sizing:border-box;background:#FFFAFC;">
           <p style="font-size:9px;color:#C0C0C0;margin:2px 0 0;">默认使用Open-Meteo免费天气，如需OpenWeatherMap填Key</p>
         </div>
+        <div style="border-top:1px dashed #FFE6EF; padding-top:10px;">
+          <label style="font-size:12px;color:#707070;font-weight:600;">☁️ 云同步（对方实时看到你填写的数据）</label>
+          <p id="setting-sync-status" style="font-size:10px;color:#A0A0A0;margin:2px 0 4px;">状态：未登录</p>
+          <input type="text" id="setting-sync-url" placeholder="Supabase Project URL" style="width:100%;padding:8px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:12px;margin-top:2px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+          <input type="text" id="setting-sync-anon" placeholder="anon public key" style="width:100%;padding:8px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:12px;margin-top:6px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+          <input type="email" id="setting-sync-email" placeholder="共享账号邮箱" style="width:100%;padding:8px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:12px;margin-top:6px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button onclick="syncSaveSettings()" style="flex:1;background:#FF7CB9;color:#fff;border:none;border-radius:20px;padding:8px;font-size:12px;cursor:pointer;">💾 保存云配置</button>
+            <button onclick="syncLogout()" style="flex:1;background:#fff;color:#FF7CB9;border:1.5px solid #FF7CB9;border-radius:20px;padding:8px;font-size:12px;cursor:pointer;">🚪 退出登录</button>
+          </div>
+          <p style="font-size:9px;color:#C0C0C0;margin:6px 0 0;">在 supabase.com 免费建项目 → SQL Editor 执行建表语句 → 填入上方配置。双方共用同一账号登录。</p>
+        </div>
         <button onclick="clearAllData()" style="background:#fff;color:#e74c3c;border:1.5px solid #e74c3c;border-radius:22px;padding:9px;font-size:13px;cursor:pointer;margin-top:2px;">🗑 清除所有数据</button>
       </div>
       <button class="btn-primary" onclick="closeSettings()" style="width:100%; margin-top:14px;">✅ 保存</button>
@@ -622,6 +638,32 @@
     </div>
   </div>
 
+  <!-- ==================== 云同步登录遮罩 ==================== -->
+  <div id="sync-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,244,249,0.97); z-index:300; align-items:center; justify-content:center;">
+    <div style="width:100%; max-width:380px; background:#FFFFFF; border-radius:20px; padding:28px 24px; margin:0 16px; box-shadow:0 10px 40px rgba(255,124,185,0.25);">
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="font-size:40px;">🐻‍❄️</div>
+        <h3 style="margin:6px 0 0; font-size:16px; color:#4A4A4A;">小窝 · 云端同步</h3>
+        <p style="font-size:11px; color:#A0A0A0; margin:4px 0 0;">登录后即可与对方实时共享数据</p>
+      </div>
+      <div id="sync-config-form" style="display:none; flex-direction:column; gap:10px;">
+        <input type="text" id="sync-cfg-url" placeholder="Supabase Project URL" style="width:100%;padding:10px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:13px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+        <input type="text" id="sync-cfg-anon" placeholder="anon public key" style="width:100%;padding:10px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:13px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+        <p style="font-size:10px;color:#C0C0C0;margin:0;">在 supabase.com 免费创建项目后，从 Project Settings → API 复制以上两项填入</p>
+        <button class="btn-primary" onclick="syncSaveConfig()" style="width:100%; margin-top:2px;">💾 保存配置</button>
+      </div>
+      <div id="sync-login-form" style="display:none; flex-direction:column; gap:10px;">
+        <input type="email" id="sync-login-email" placeholder="登录邮箱" autocomplete="username" style="width:100%;padding:10px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+        <input type="password" id="sync-login-password" placeholder="登录密码" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box;background:#FFFAFC;">
+        <p id="sync-login-error" style="font-size:11px;color:#e74c3c;margin:0;display:none;"></p>
+        <button class="btn-primary" id="sync-login-btn" onclick="syncLogin()" style="width:100%;">🔐 登录</button>
+        <p style="font-size:10px;color:#C0C0C0;text-align:center;margin:0;">双方使用同一个账号登录 · 配置有误点下方重设</p>
+        <button onclick="showOverlay('config')" style="background:none;border:none;font-size:11px;color:#C0C0C0;cursor:pointer;text-decoration:underline;margin:0 auto;">重新配置服务器</button>
+      </div>
+      <p id="sync-connecting" style="display:none; text-align:center; font-size:12px; color:#A0A0A0; margin:8px 0 0;">⏳ 正在连接...</p>
+    </div>
+  </div>
+
   <!-- ==================== JavaScript ==================== -->
   <script>
   'use strict';
@@ -630,6 +672,11 @@
   //  一、数据存储
   // ============================================================
   var STORAGE_KEY = 'bear_nest_v2';
+  var SYNC_STORAGE_KEY = 'bear_nest_sync_v1';  // 本机云配置（url/anonKey/email，密码永不落盘）
+  var SYNC_META_KEY = 'bear_nest_meta_v1';     // 各模块的服务端时间戳（防实时回环）
+  // 预填服务器配置：填上后双方设备首次打开可跳过配置，直接输密码登录。
+  // （anon key 本身是公开的，数据安全由数据库行级权限 RLS 保证；email 会随页面源码公开，介意可留空）
+  var SYNC_DEFAULT_CONFIG = { url: 'https://mveejuqahzwcgbbhzarz.supabase.co', anonKey: 'sb_publishable_5isqaSxu854dy1Clk234RQ_9gm4qZaU', email: '2161686496@qq.com' };
 
   var DEFAULT_DATA = {
     coupleStartDate: '2024-01-01',
@@ -794,7 +841,11 @@
   // 全局状态
   var APP = loadData();
 
-  function persistState() { saveData(APP); }
+  function persistState(mod) {
+    saveData(APP);
+    // 传了模块名才推送到云端（无参 = 纯本地保存，如 _lastWeather 等本机状态）
+    if (mod && !SYNC.applyingRemote) SYNC.queuePush(mod);
+  }
 
   // ============================================================
   //  二、工具函数
@@ -878,7 +929,7 @@
       APP.dailyQuote = FALLBACK_QUOTES[idx];
       APP.quoteDate = today;
       APP.quoteTimestamp = now;
-      persistState();
+      persistState('home');
     }
 
     document.getElementById('daily-quote').textContent = APP.dailyQuote;
@@ -936,7 +987,7 @@
           .then(function(data) {
             var addr = data.address || {};
             APP.cityName = addr.city || addr.town || addr.county || addr.state || '你的位置';
-            persistState();
+            persistState('home');
             cityEl.textContent = APP.cityName;
           })
           .catch(function() {
@@ -1149,7 +1200,7 @@
       APP.periodDates.push(dateStr);
       APP.periodDates.sort();
     }
-    persistState();
+    persistState('period');
     renderCalendar();
     updateQuickCards();
   }
@@ -1277,7 +1328,7 @@
     var today = todayStr();
     if (!APP.habitRecords[today]) APP.habitRecords[today] = {};
     APP.habitRecords[today][habitId] = !APP.habitRecords[today][habitId];
-    persistState();
+    persistState('habits');
     refreshHabitsPage();
     updateQuickCards();
   }
@@ -1305,7 +1356,7 @@
     ];
     document.getElementById('habit-encourage').textContent = msgs[Math.min(done, 8)];
 
-    if (done === 9 && APP.dpApiKey) fetchDPHabitPraise();
+    if (done === 9 && APP.dpApiKey && !SYNC.applyingRemote) fetchDPHabitPraise();
 
     // 渲染方块
     var grid = document.getElementById('habits-grid');
@@ -1357,7 +1408,7 @@
       completed: false,
       createdAt: todayStr()
     });
-    persistState();
+    persistState('todos');
     closeAddTodoModal();
     refreshTodoPage();
     updateQuickCards();
@@ -1370,7 +1421,7 @@
         break;
       }
     }
-    persistState();
+    persistState('todos');
     refreshTodoPage();
     updateQuickCards();
   }
@@ -1378,7 +1429,7 @@
   function deleteTodo(id) {
     if (!confirm('确定删除这条待办吗？')) return;
     APP.todos = APP.todos.filter(function(t) { return t.id !== id; });
-    persistState();
+    persistState('todos');
     refreshTodoPage();
     updateQuickCards();
   }
@@ -1436,13 +1487,15 @@
     document.getElementById('setting-start-date').value = APP.coupleStartDate || '';
     document.getElementById('setting-dp-key').value = APP.dpApiKey || '';
     document.getElementById('setting-weather-key').value = APP.weatherApiKey || '';
+    openSyncSettingsFields();
   }
 
   function closeSettings() {
     APP.coupleStartDate = document.getElementById('setting-start-date').value || DEFAULT_DATA.coupleStartDate;
     APP.dpApiKey = document.getElementById('setting-dp-key').value.trim();
     APP.weatherApiKey = document.getElementById('setting-weather-key').value.trim();
-    persistState();
+    persistState('home');      // coupleStartDate 属于 home 模块
+    persistState('settings');  // 两个 Key 属于 settings 模块
     document.getElementById('settings-modal').style.display = 'none';
     refreshHomePage();
     if (APP.dpApiKey) fetchDPQuote();
@@ -1452,6 +1505,19 @@
     if (!confirm('确定清除所有数据吗？此操作不可恢复！\n\n包括：经期记录、打卡记录、待办、设置')) return;
     localStorage.removeItem(STORAGE_KEY);
     APP = loadData();
+    // 同步清空云端，再推送默认值（否则另一设备会把旧数据推回来）
+    if (SYNC.client && SYNC.isSignedIn) {
+      SYNC.client.from('nest_data').delete().in('id', MODULE_IDS).then(function() {
+        SYNC.meta = {};
+        saveSyncMeta();
+        for (var i = 0; i < MODULE_IDS.length; i++) SYNC.queuePush(MODULE_IDS[i]);
+        flushPushes();
+      }).catch(function() {});
+    }
+    // 重置设置弹窗输入框，避免 closeSettings 把旧值写回
+    document.getElementById('setting-start-date').value = DEFAULT_DATA.coupleStartDate;
+    document.getElementById('setting-dp-key').value = '';
+    document.getElementById('setting-weather-key').value = '';
     persistState();
     closeSettings();
     switchTab('home');
@@ -1504,7 +1570,7 @@
         APP.dailyQuote = result;
         APP.quoteDate = todayStr();
         APP.quoteTimestamp = Date.now();
-        persistState();
+        persistState('home');
         document.getElementById('daily-quote').textContent = result;
       }
     });
@@ -1595,9 +1661,393 @@
       }
     }
 
+    // 云同步初始化（登录遮罩 / 实时订阅 / 全量拉取）
+    initSync();
+
     console.log('🐻‍❄️ 小窝 · 自嘲熊 已就绪');
     console.log('💾 数据: LocalStorage | 🌤 天气: Open-Meteo免费');
     console.log('🤖 AI: DeepSeek (在设置中填入Key)');
+  }
+
+  // ============================================================
+  //  十二、云同步（Supabase 实时共享，双方数据互通）
+  // ============================================================
+  var MODULE_IDS = ['home', 'period', 'habits', 'todos', 'settings'];
+
+  var SYNC = {
+    config: null,        // { url, anonKey, email }
+    client: null,
+    channel: null,
+    isSignedIn: false,
+    applyingRemote: false,
+    pending: {},         // 待推送模块集合
+    meta: {},            // 模块 -> 服务端 updated_at
+    debounceTimer: null,
+    retryTimer: null
+  };
+
+  /** 本机云配置读写（密码永不落盘） */
+  function getSyncConfig() {
+    try {
+      var raw = localStorage.getItem(SYNC_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null;
+  }
+  function saveSyncConfig(cfg) {
+    SYNC.config = cfg;
+    try { localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(cfg)); } catch(e) {}
+  }
+  function getSyncMeta() {
+    try {
+      var raw = localStorage.getItem(SYNC_META_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return {};
+  }
+  function saveSyncMeta() {
+    try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(SYNC.meta)); } catch(e) {}
+  }
+
+  /** 模块 -> payload 提取（从 APP 取出该模块要同步的字段） */
+  var MODULE_PAYLOAD = {
+    home: function() {
+      return {
+        coupleStartDate: APP.coupleStartDate,
+        dailyQuote: APP.dailyQuote,
+        quoteDate: APP.quoteDate,
+        quoteTimestamp: APP.quoteTimestamp,
+        cityName: APP.cityName
+      };
+    },
+    period:   function() { return { periodDates: APP.periodDates }; },
+    habits:   function() { return { habitRecords: APP.habitRecords }; },
+    todos:    function() { return { todos: APP.todos }; },
+    settings: function() { return { dpApiKey: APP.dpApiKey, weatherApiKey: APP.weatherApiKey }; }
+  };
+
+  /** 远端数据应用后的 UI 刷新（只做纯渲染，不触发任何回写） */
+  var MODULE_RENDER = {
+    home: function() {
+      var start = APP.coupleStartDate || DEFAULT_DATA.coupleStartDate;
+      var days = Math.max(0, daysBetween(start, todayStr()));
+      document.getElementById('days-counter').textContent = days;
+      document.getElementById('days-date-range').textContent = '从 ' + start + ' 到现在，每一天都值得纪念';
+      document.getElementById('daily-quote').textContent = APP.dailyQuote || DEFAULT_DATA.dailyQuote;
+      document.getElementById('weather-city').textContent = APP.cityName || '定位中...';
+      updateQuickCards();
+    },
+    period: function() {
+      renderCalendar();
+      showCareCategory(currentCareCategory);
+      updateQuickCards();
+    },
+    habits: function() {
+      refreshHabitsPage();
+      updateQuickCards();
+    },
+    todos: function() {
+      refreshTodoPage();
+      updateQuickCards();
+    },
+    settings: function() {
+      // 无对应渲染；对方同步来 DeepSeek Key 后按 initApp 逻辑补生成当日文案
+      if (APP.dpApiKey && APP.quoteDate !== todayStr()) fetchDPQuote();
+    }
+  };
+
+  /** 判断模块在本地是否还是默认值（用于首轮合并时决定谁胜出） */
+  function isDefaultModule(mod) {
+    if (mod === 'home')     return APP.coupleStartDate === DEFAULT_DATA.coupleStartDate && !APP.cityName;
+    if (mod === 'period')   return APP.periodDates.length === 0;
+    if (mod === 'habits')   return Object.keys(APP.habitRecords).length === 0;
+    if (mod === 'todos')    return APP.todos.length === 0;
+    if (mod === 'settings') return !APP.dpApiKey && !APP.weatherApiKey;
+    return true;
+  }
+
+  /** 判断远端 payload 是否为空/默认 */
+  function isPayloadEmpty(mod, payload) {
+    if (!payload) return true;
+    if (mod === 'home')     return (payload.coupleStartDate === undefined || payload.coupleStartDate === DEFAULT_DATA.coupleStartDate) && !payload.cityName;
+    if (mod === 'period')   return !payload.periodDates || payload.periodDates.length === 0;
+    if (mod === 'habits')   return !payload.habitRecords || Object.keys(payload.habitRecords).length === 0;
+    if (mod === 'todos')    return !payload.todos || payload.todos.length === 0;
+    if (mod === 'settings') return !payload.dpApiKey && !payload.weatherApiKey;
+    return true;
+  }
+
+  /** 同步状态徽章：ok / sync / off / null(隐藏) */
+  function setBadge(state) {
+    var el = document.getElementById('sync-badge');
+    if (!el) return;
+    if (state === 'ok')   { el.textContent = '● 已同步'; el.style.display = 'inline'; }
+    else if (state === 'sync') { el.textContent = '⟳ 同步中'; el.style.display = 'inline'; }
+    else if (state === 'off')  { el.textContent = '⚠ 未连接'; el.style.display = 'inline'; }
+    else el.style.display = 'none';
+  }
+
+  /** 登录遮罩：config（首次配置）/ login（登录）/ connecting（连接中）/ hide */
+  function showOverlay(mode) {
+    var ov = document.getElementById('sync-overlay');
+    var cfgForm = document.getElementById('sync-config-form');
+    var loginForm = document.getElementById('sync-login-form');
+    var connecting = document.getElementById('sync-connecting');
+    if (mode === 'hide') { ov.style.display = 'none'; return; }
+    ov.style.display = 'flex';
+    connecting.style.display = (mode === 'connecting') ? 'block' : 'none';
+    cfgForm.style.display = (mode === 'config') ? 'flex' : 'none';
+    loginForm.style.display = (mode === 'login') ? 'flex' : 'none';
+    if (mode === 'config') {
+      document.getElementById('sync-cfg-url').value = (SYNC.config && SYNC.config.url) || '';
+      document.getElementById('sync-cfg-anon').value = (SYNC.config && SYNC.config.anonKey) || '';
+    }
+    if (mode === 'login') {
+      document.getElementById('sync-login-email').value = (SYNC.config && SYNC.config.email) || '';
+      document.getElementById('sync-login-error').style.display = 'none';
+    }
+  }
+
+  function buildClient() {
+    if (typeof supabase === 'undefined') return false; // CDN 未加载成功
+    if (!SYNC.config || !SYNC.config.url || !SYNC.config.anonKey) return false;
+    SYNC.client = supabase.createClient(SYNC.config.url, SYNC.config.anonKey);
+    return true;
+  }
+
+  /** 初始化（initApp 末尾调用，异步不阻塞页面） */
+  function initSync() {
+    var stored = getSyncConfig();
+    if (!stored && SYNC_DEFAULT_CONFIG) { stored = SYNC_DEFAULT_CONFIG; saveSyncConfig(stored); }
+    SYNC.config = stored;
+    SYNC.meta = getSyncMeta();
+
+    if (!SYNC.config || !SYNC.config.url || !SYNC.config.anonKey) {
+      showOverlay('config');
+      return;
+    }
+    if (!buildClient()) { showOverlay('config'); return; }
+
+    showOverlay('connecting');
+    SYNC.client.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        SYNC.isSignedIn = true;
+        showOverlay('hide');
+        startRealtime();
+        fullPull();
+      } else {
+        showOverlay('login');
+      }
+    }).catch(function() { showOverlay('login'); });
+
+    SYNC.client.auth.onAuthStateChange(function(event) {
+      if (event === 'SIGNED_OUT') {
+        SYNC.isSignedIn = false;
+        setBadge(null);
+        if (SYNC.channel) { SYNC.client.removeChannel(SYNC.channel); SYNC.channel = null; }
+        showOverlay('login');
+      }
+    });
+
+    // 断线恢复：联网/回到前台时先补推再全量拉取；切后台/关页时把待推送立即发出
+    window.addEventListener('online', function() {
+      if (!SYNC.isSignedIn) return;
+      flushPushes();
+      fullPull();
+    });
+    document.addEventListener('visibilitychange', function() {
+      if (!SYNC.isSignedIn) return;
+      if (document.visibilityState === 'hidden') flushPushes();
+      else { flushPushes(); fullPull(); }
+    });
+    window.addEventListener('pagehide', function() { flushPushes(); });
+  }
+
+  /** 遮罩：首次保存服务器配置 */
+  function syncSaveConfig() {
+    var url = document.getElementById('sync-cfg-url').value.trim();
+    var anon = document.getElementById('sync-cfg-anon').value.trim();
+    if (!url || !anon) { alert('请填写完整的 Project URL 和 anon public key'); return; }
+    saveSyncConfig({ url: url, anonKey: anon, email: '' });
+    if (!buildClient()) { showOverlay('config'); return; }
+    showOverlay('connecting');
+    SYNC.client.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        SYNC.isSignedIn = true;
+        showOverlay('hide');
+        startRealtime();
+        fullPull();
+      } else {
+        showOverlay('login');
+      }
+    }).catch(function() { showOverlay('login'); });
+  }
+
+  /** 登录（双方共用同一账号） */
+  function syncLogin() {
+    var email = document.getElementById('sync-login-email').value.trim();
+    var password = document.getElementById('sync-login-password').value;
+    var errEl = document.getElementById('sync-login-error');
+    var btn = document.getElementById('sync-login-btn');
+    if (!email || !password) {
+      errEl.textContent = '请输入邮箱和密码';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!SYNC.client) { showOverlay('config'); return; }
+    btn.disabled = true;
+    btn.textContent = '⏳ 登录中...';
+    errEl.style.display = 'none';
+    SYNC.client.auth.signInWithPassword({ email: email, password: password }).then(function(res) {
+      if (res.error) {
+        errEl.textContent = '登录失败：' + (res.error.message || res.error.code || '请检查邮箱和密码');
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '🔐 登录';
+        return;
+      }
+      document.getElementById('sync-login-password').value = '';
+      SYNC.config.email = email;
+      saveSyncConfig(SYNC.config);
+      SYNC.isSignedIn = true;
+      showOverlay('hide');
+      startRealtime();
+      fullPull();
+    });
+  }
+
+  /** 设置弹窗：回填云同步配置 */
+  function openSyncSettingsFields() {
+    var urlEl = document.getElementById('setting-sync-url');
+    var anonEl = document.getElementById('setting-sync-anon');
+    var emailEl = document.getElementById('setting-sync-email');
+    var statusEl = document.getElementById('setting-sync-status');
+    if (SYNC.config) {
+      urlEl.value = SYNC.config.url || '';
+      anonEl.value = SYNC.config.anonKey || '';
+      emailEl.value = SYNC.config.email || '';
+    }
+    statusEl.textContent = SYNC.isSignedIn ? '状态：✅ 已连接（双方数据实时同步中）' : '状态：⚠ 未登录';
+  }
+
+  /** 设置弹窗：保存云配置（换库后重载页面） */
+  function syncSaveSettings() {
+    var url = document.getElementById('setting-sync-url').value.trim();
+    var anon = document.getElementById('setting-sync-anon').value.trim();
+    var email = document.getElementById('setting-sync-email').value.trim();
+    if (!url || !anon) { alert('请填写 Supabase Project URL 和 anon public key'); return; }
+    saveSyncConfig({ url: url, anonKey: anon, email: email });
+    SYNC.meta = {};
+    saveSyncMeta();
+    location.reload();
+  }
+
+  /** 设置弹窗：退出登录 */
+  function syncLogout() {
+    if (!confirm('确定退出登录吗？退出后将无法与对方同步数据。')) return;
+    if (SYNC.client) {
+      SYNC.client.auth.signOut().then(function() { location.reload(); });
+    }
+  }
+
+  /** 实时订阅（private channel，RLS 下需登录态） */
+  function startRealtime() {
+    if (!SYNC.client || !SYNC.isSignedIn || SYNC.channel) return;
+    SYNC.channel = SYNC.client
+      .channel('nest_sync', { config: { private: true } })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nest_data' }, function(payload) {
+        if (payload.eventType === 'DELETE') return; // 清空流程由 clearAllData 补推默认值收敛
+        var row = payload.new;
+        if (!row || MODULE_IDS.indexOf(row.id) < 0) return;
+        applyRemoteModule(row.id, row.payload, row.updated_at);
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') setBadge('ok');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setBadge('off');
+      });
+  }
+
+  /** 远端变更应用到本地（不回推，防回环） */
+  function applyRemoteModule(mod, payload, updatedAt) {
+    if (!payload || MODULE_IDS.indexOf(mod) < 0) return;
+    if (updatedAt && SYNC.meta[mod] && updatedAt <= SYNC.meta[mod]) return; // 旧事件/自己推送的回声
+    SYNC.applyingRemote = true;
+    var keys = Object.keys(MODULE_PAYLOAD[mod]());
+    for (var i = 0; i < keys.length; i++) {
+      if (payload[keys[i]] !== undefined) APP[keys[i]] = payload[keys[i]];
+    }
+    saveData(APP); // 直写本地，不走 persistState（不回推）
+    if (updatedAt) SYNC.meta[mod] = updatedAt;
+    saveSyncMeta();
+    SYNC.applyingRemote = false;
+    if (MODULE_RENDER[mod]) MODULE_RENDER[mod]();
+  }
+
+  /** 标记模块待推送（debounce 1s 合并） */
+  function queuePush(mod) {
+    if (!MODULE_PAYLOAD[mod]) return;
+    SYNC.pending[mod] = true;
+    if (SYNC.debounceTimer) clearTimeout(SYNC.debounceTimer);
+    SYNC.debounceTimer = setTimeout(flushPushes, 1000);
+  }
+
+  /** 把待推送模块 upsert 到云端 */
+  function flushPushes() {
+    if (SYNC.debounceTimer) { clearTimeout(SYNC.debounceTimer); SYNC.debounceTimer = null; }
+    var mods = Object.keys(SYNC.pending);
+    if (mods.length === 0 || !SYNC.isSignedIn || !SYNC.client) return;
+    SYNC.pending = {};
+    setBadge('sync');
+    var rows = [];
+    for (var i = 0; i < mods.length; i++) {
+      rows.push({ id: mods[i], payload: MODULE_PAYLOAD[mods[i]]() });
+    }
+    SYNC.client.from('nest_data').upsert(rows, { onConflict: 'id' }).select('id, updated_at').then(function(res) {
+      if (res.error) {
+        for (var k = 0; k < rows.length; k++) SYNC.pending[rows[k].id] = true;
+        setBadge('off');
+        if (SYNC.retryTimer) clearTimeout(SYNC.retryTimer);
+        SYNC.retryTimer = setTimeout(flushPushes, 5000);
+        return;
+      }
+      var data = res.data || [];
+      for (var j = 0; j < data.length; j++) SYNC.meta[data[j].id] = data[j].updated_at;
+      saveSyncMeta();
+      setBadge('ok');
+    }).catch(function() {
+      for (var m = 0; m < rows.length; m++) SYNC.pending[rows[m].id] = true;
+      setBadge('off');
+    });
+  }
+
+  /** 全量拉取云端数据（登录后/回到前台时） */
+  function fullPull() {
+    if (!SYNC.isSignedIn || !SYNC.client) return;
+    SYNC.client.from('nest_data').select('id, payload, updated_at').then(function(res) {
+      if (res.error) { setBadge('off'); return; }
+      var rows = res.data || [];
+      var byId = {};
+      for (var i = 0; i < rows.length; i++) byId[rows[i].id] = rows[i];
+      var needPush = false;
+      for (var j = 0; j < MODULE_IDS.length; j++) {
+        var mod = MODULE_IDS[j];
+        var row = byId[mod];
+        if (!row) {
+          // 云端还没有该模块：本地有数据则推上去
+          if (!isDefaultModule(mod)) { SYNC.queuePush(mod); needPush = true; }
+          continue;
+        }
+        if (!SYNC.meta[mod] && !isDefaultModule(mod) && isPayloadEmpty(mod, row.payload)) {
+          // 本机第一次同步该模块、本地有数据、云端是空行 -> 本地胜出，推上去
+          SYNC.queuePush(mod); needPush = true;
+          continue;
+        }
+        if (SYNC.meta[mod] && row.updated_at <= SYNC.meta[mod]) continue; // 不是新数据
+        applyRemoteModule(mod, row.payload, row.updated_at);
+      }
+      if (needPush) flushPushes();
+      setBadge('ok');
+    }).catch(function() { setBadge('off'); });
   }
 
   document.addEventListener('DOMContentLoaded', initApp);
