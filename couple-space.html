@@ -976,7 +976,7 @@
     timeEl.textContent = '';
 
     // 先尝试浏览器定位
-    getLocation().then(function(pos) {
+    return getLocation().then(function(pos) {
       var lat = pos.lat;
       var lon = pos.lon;
 
