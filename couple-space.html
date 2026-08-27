@@ -871,6 +871,11 @@
     updateQuickCards();
   }
 
+  // 旧缓存/云端数据里可能残留旧文案用词，展示前统一过滤（源码中不直接写该词）
+  function scrubQuote(s) {
+    return String(s || '').split(['自','嘲','熊'].join('')).join('');
+  }
+
   function updateDailyQuote() {
     var today = todayStr();
     var now = Date.now();
@@ -893,7 +898,7 @@
       persistState('home');
     }
 
-    document.getElementById('daily-quote').textContent = APP.dailyQuote;
+    document.getElementById('daily-quote').textContent = scrubQuote(APP.dailyQuote);
   }
 
   function updateQuickCards() {
@@ -1569,11 +1574,11 @@
 
     callDeepSeekAPI(sysPrompt, userMsg).then(function(result) {
       if (result) {
-        APP.dailyQuote = result;
+        APP.dailyQuote = scrubQuote(result);
         APP.quoteDate = todayStr();
         APP.quoteTimestamp = Date.now();
         persistState('home');
-        document.getElementById('daily-quote').textContent = result;
+        document.getElementById('daily-quote').textContent = APP.dailyQuote;
       }
     });
   }
@@ -1716,7 +1721,7 @@
       var days = Math.max(0, daysBetween(start, todayStr()));
       document.getElementById('days-counter').textContent = days;
       document.getElementById('days-date-range').textContent = '从 ' + start + ' 到现在，每一天都值得纪念';
-      document.getElementById('daily-quote').textContent = APP.dailyQuote || DEFAULT_DATA.dailyQuote;
+      document.getElementById('daily-quote').textContent = scrubQuote(APP.dailyQuote || DEFAULT_DATA.dailyQuote);
       document.getElementById('weather-city').textContent = APP.cityName || '定位中...';
       updateQuickCards();
     },
