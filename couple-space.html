@@ -1662,7 +1662,7 @@
     }
 
     // 云同步初始化（登录遮罩 / 实时订阅 / 全量拉取）
-    initSync();
+    try { initSync(); } catch(e) { console.error('云同步初始化失败', e); }
 
     console.log('🐻‍❄️ 小窝 · 自嘲熊 已就绪');
     console.log('💾 数据: LocalStorage | 🌤 天气: Open-Meteo免费');
@@ -1790,6 +1790,7 @@
   /** 登录遮罩：config（首次配置）/ login（登录）/ connecting（连接中）/ hide */
   function showOverlay(mode) {
     var ov = document.getElementById('sync-overlay');
+    if (!ov) return; // 旧缓存页面没有遮罩节点时静默跳过
     var cfgForm = document.getElementById('sync-config-form');
     var loginForm = document.getElementById('sync-login-form');
     var connecting = document.getElementById('sync-connecting');
