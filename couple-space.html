@@ -203,18 +203,33 @@
       transform: rotate(45deg);
     }
 
-    /* 打卡方块 */
-    .habit-item {
+    /* 日记便签 */
+    .diary-note {
       transition: all 0.15s;
       cursor: pointer;
       -webkit-tap-highlight-color: rgba(255,124,185,0.15);
+      position: relative;
+      overflow: hidden;
     }
-    .habit-item:active {
-      transform: scale(0.95);
+    .diary-note:active {
+      transform: scale(0.97);
     }
-    .habit-item.done {
-      background: #FFF5F9;
-      border: 2px solid #FF7CB9 !important;
+    .diary-note .note-date {
+      font-size: 10px;
+      color: #B8A8A0;
+      font-weight: 600;
+    }
+    .diary-note .note-preview {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 12px;
+      color: #6A5A50;
+      line-height: 1.6;
+      margin-top: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     /* 日历格子 */
@@ -360,7 +375,6 @@
       <div style="margin:0 16px; background:linear-gradient(135deg, #FF7CB9 0%, #FFB3D0 100%); border-radius:16px; padding:14px 18px; color:#FFFFFF; text-align:center; position:relative;">
         <span style="position:absolute; left:12px; top:8px; font-size:16px;">💌</span>
         <p id="daily-quote" style="margin:0; font-size:13px; font-weight:500; line-height:1.7; padding:0 18px;">今天也是和小窝一起的美好一天~</p>
-        <span style="font-size:10px; opacity:0.7; display:block; margin-top:2px;">— 自嘲熊</span>
       </div>
 
       <!-- 4个快捷方块 -->
@@ -375,10 +389,10 @@
           <div style="font-weight:600; color:#4A4A4A; font-size:12px; margin-top:2px;">下次经期</div>
           <div style="font-size:10px; color:#A0A0A0;" id="quick-period">点击查看</div>
         </div>
-        <div class="card" onclick="switchTab('habits')" style="margin:0; text-align:center; cursor:pointer;">
-          <div style="font-size:30px;">✅</div>
-          <div style="font-weight:600; color:#4A4A4A; font-size:12px; margin-top:2px;">今日打卡</div>
-          <div style="font-size:10px; color:#A0A0A0;" id="quick-habits">0/9</div>
+        <div class="card" onclick="switchTab('diary')" style="margin:0; text-align:center; cursor:pointer;">
+          <div style="font-size:30px;">📔</div>
+          <div style="font-weight:600; color:#4A4A4A; font-size:12px; margin-top:2px;">今日日记</div>
+          <div style="font-size:10px; color:#A0A0A0;" id="quick-diary">写一篇吧 📝</div>
         </div>
         <div class="card" onclick="switchTab('todos')" style="margin:0; text-align:center; cursor:pointer;">
           <div style="font-size:30px;">📝</div>
@@ -528,20 +542,31 @@
       </div>
     </div>
 
-    <!-- ==================== 4. 习惯打卡 ==================== -->
-    <div id="tab-habits" class="tab-page">
-      <div class="card" style="text-align:center;">
-        <div style="font-size:38px; font-weight:800; color:#FF7CB9;" id="habit-progress">0/9</div>
-        <div class="progress-bar" style="margin:6px 24px;">
-          <div class="progress-fill" id="habit-progress-bar" style="width:0%;"></div>
+    <!-- ==================== 4. 日记 ==================== -->
+    <div id="tab-diary" class="tab-page">
+      <div class="card" style="padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0; font-size:15px; color:#4A4A4A; font-weight:700;">📔 今日日记</h3>
+          <span id="diary-today-date" style="font-size:11px; color:#B8A8A0;"></span>
         </div>
-        <p style="font-size:11px; color:#A0A0A0; margin:4px 0 0;" id="habit-encourage">今天也从小小的打卡开始吧~ 🐻‍❄️</p>
+        <textarea id="diary-input" rows="5" placeholder="今天有什么想记录的小事呢？开心的、难过的、想对TA说的话……都可以写下来 💕" style="width:100%;padding:12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:13px;line-height:1.7;margin-top:10px;outline:none;box-sizing:border-box;background:#FFFAFC;resize:vertical;font-family:inherit;"></textarea>
+        <div id="diary-today-view" style="display:none; background:#FFF9E3; border-radius:12px; padding:12px 14px; margin-top:10px;">
+          <p id="diary-today-text" style="margin:0; font-size:13px; color:#6A5A50; line-height:1.8; white-space:pre-wrap; word-break:break-word;"></p>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button id="diary-save-btn" class="btn-primary" onclick="saveDiary()" style="flex:1; font-size:13px; padding:10px;">💾 保存今天的日记</button>
+          <button id="diary-edit-btn" onclick="editDiary()" style="display:none; flex:1; font-size:13px; padding:10px; background:#FFF1F5; color:#FF7CB9; border:1.5px solid #FFB3D0; border-radius:12px; cursor:pointer;">✏️ 编辑</button>
+        </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:0 16px;" id="habits-grid"></div>
-
-      <div style="margin:14px 16px; background:linear-gradient(135deg,#FFF7FA,#FFE6EF); border-radius:16px; padding:12px; text-align:center;">
-        <p style="margin:0; font-size:12px; color:#FF7CB9;" id="habit-message">💪 完成打卡是对自己最温柔的照顾~</p>
+      <div style="margin:16px 16px 8px;">
+        <h3 style="margin:0; font-size:14px; color:#4A4A4A; font-weight:700;">🗂 过去的日记</h3>
+      </div>
+      <div id="diary-notes" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 16px; padding-bottom:4px;"></div>
+      <div id="diary-empty" style="text-align:center; padding:32px 20px; color:#D0D0D0;">
+        <div style="font-size:40px;">🍃</div>
+        <p style="font-size:13px; margin:6px 0;">还没有写过日记</p>
+        <p style="font-size:11px;">从今天开始记录吧~</p>
       </div>
     </div>
 
@@ -569,8 +594,8 @@
       <button class="nav-item" data-tab="period" onclick="switchTab('period')">
         <span class="nav-icon">📅</span><span>例假</span>
       </button>
-      <button class="nav-item" data-tab="habits" onclick="switchTab('habits')">
-        <span class="nav-icon">✅</span><span>打卡</span>
+      <button class="nav-item" data-tab="diary" onclick="switchTab('diary')">
+        <span class="nav-icon">📔</span><span>日记</span>
       </button>
       <button class="nav-item" data-tab="todos" onclick="switchTab('todos')">
         <span class="nav-icon">📝</span><span>待办</span>
@@ -638,6 +663,19 @@
     </div>
   </div>
 
+  <!-- ==================== 日记查看弹窗 ==================== -->
+  <div id="diary-view-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeDiaryView()">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin:0; font-size:15px; color:#4A4A4A;">📔 <span id="diary-view-date"></span></h3>
+        <button onclick="closeDiaryView()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#A0A0A0;padding:4px;">✕</button>
+      </div>
+      <div style="background:#FFF9E3; border-radius:12px; padding:14px 16px; max-height:50vh; overflow-y:auto;">
+        <p id="diary-view-text" style="margin:0; font-size:13px; color:#6A5A50; line-height:1.9; white-space:pre-wrap; word-break:break-word;"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 云同步登录遮罩 ==================== -->
   <div id="sync-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,244,249,0.97); z-index:300; align-items:center; justify-content:center;">
     <div style="width:100%; max-width:380px; background:#FFFFFF; border-radius:20px; padding:28px 24px; margin:0 16px; box-shadow:0 10px 40px rgba(255,124,185,0.25);">
@@ -684,7 +722,7 @@
     quoteDate: '',
     quoteTimestamp: 0,
     periodDates: [],
-    habitRecords: {},
+    diary: [],
     todos: [],
     dpApiKey: '',
     weatherApiKey: '',
@@ -692,19 +730,6 @@
     _lastWeather: null,
     _currentTab: 'home'
   };
-
-  // 9个打卡习惯
-  var HABITS = [
-    { id: 'water',    name: '喝水',     icon: '💧', goal: '8杯' },
-    { id: 'fruit',    name: '吃水果',   icon: '🍎', goal: '每日' },
-    { id: 'sleep',    name: '早睡',     icon: '😴', goal: '23:00前' },
-    { id: 'skincare', name: '护肤',     icon: '💆', goal: '早晚' },
-    { id: 'chores',   name: '做家务',   icon: '🧹', goal: '整洁' },
-    { id: 'stretch',  name: '拉伸',     icon: '🧘', goal: '放松' },
-    { id: 'vitamin',  name: '维C',      icon: '💊', goal: '补充' },
-    { id: 'walk',     name: '散步',     icon: '🚶', goal: '6000步' },
-    { id: 'read',     name: '阅读',     icon: '📖', goal: '30分钟' }
-  ];
 
   // 后备文案库（自嘲熊风格：治愈+淡淡自嘲）
   var FALLBACK_QUOTES = [
@@ -891,7 +916,7 @@
     if (tabName === 'home')    refreshHomePage();
     if (tabName === 'weather') refreshWeather();
     if (tabName === 'period')  refreshPeriodPage();
-    if (tabName === 'habits')  refreshHabitsPage();
+    if (tabName === 'diary')   renderDiaryPage();
     if (tabName === 'todos')   refreshTodoPage();
 
     document.getElementById('app').scrollTop = 0;
@@ -948,12 +973,7 @@
       pEl.textContent = '点击查看';
     }
 
-    var todayHabits = getTodayHabits();
-    var done = 0;
-    for (var i = 0; i < HABITS.length; i++) {
-      if (todayHabits[HABITS[i].id]) done++;
-    }
-    document.getElementById('quick-habits').textContent = done + '/9';
+    document.getElementById('quick-diary').textContent = getDiaryByDate(todayStr()) ? '已写 ✨' : '写一篇吧 📝';
 
     var activeTodos = APP.todos.filter(function(t) { return !t.completed; });
     document.getElementById('quick-todos').textContent = activeTodos.length + '项待办';
@@ -1316,69 +1336,115 @@
   }
 
   // ============================================================
-  //  七、打卡
+  //  七、日记
   // ============================================================
-  function getTodayHabits() {
-    var today = todayStr();
-    if (!APP.habitRecords[today]) APP.habitRecords[today] = {};
-    return APP.habitRecords[today];
+  function getDiaryByDate(date) {
+    for (var i = 0; i < APP.diary.length; i++) {
+      if (APP.diary[i].date === date) return APP.diary[i];
+    }
+    return null;
   }
 
-  function toggleHabit(habitId) {
+  function showDiaryEditMode(isEdit) {
+    document.getElementById('diary-input').style.display = isEdit ? 'block' : 'none';
+    document.getElementById('diary-today-view').style.display = isEdit ? 'none' : 'block';
+    document.getElementById('diary-save-btn').style.display = isEdit ? 'block' : 'none';
+    document.getElementById('diary-edit-btn').style.display = isEdit ? 'none' : 'block';
+  }
+
+  function editDiary() {
+    var today = getDiaryByDate(todayStr());
+    if (today) document.getElementById('diary-input').value = today.text;
+    showDiaryEditMode(true);
+  }
+
+  function saveDiary() {
+    var inputEl = document.getElementById('diary-input');
+    var text = inputEl.value.trim();
+    if (!text) { alert('写点什么再保存吧~ 📝'); return; }
     var today = todayStr();
-    if (!APP.habitRecords[today]) APP.habitRecords[today] = {};
-    APP.habitRecords[today][habitId] = !APP.habitRecords[today][habitId];
-    persistState('habits');
-    refreshHabitsPage();
+    var entry = getDiaryByDate(today);
+    if (entry) {
+      entry.text = text;
+      entry.updatedAt = Date.now();
+    } else {
+      APP.diary.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        date: today,
+        text: text,
+        updatedAt: Date.now()
+      });
+    }
+    persistState('diary');
+    renderDiaryPage();
     updateQuickCards();
   }
 
-  function refreshHabitsPage() {
-    var habits = getTodayHabits();
-    var done = 0;
-    for (var i = 0; i < HABITS.length; i++) {
-      if (habits[HABITS[i].id]) done++;
+  var DIARY_NOTE_COLORS = ['#FFF9E3', '#FFF1F5', '#EFFAF3', '#F2F0FF'];
+
+  function renderDiaryPage() {
+    var today = todayStr();
+    document.getElementById('diary-today-date').textContent = today;
+
+    var inputEl = document.getElementById('diary-input');
+    // 正在输入时不清空/覆盖输入框，防止远端同步把写到一半的文字冲掉
+    var typing = document.activeElement === inputEl && inputEl.value.trim() !== '';
+    var todayEntry = getDiaryByDate(today);
+
+    if (todayEntry) {
+      if (typing) {
+        showDiaryEditMode(true);
+      } else {
+        inputEl.value = todayEntry.text;
+        document.getElementById('diary-today-text').textContent = todayEntry.text;
+        showDiaryEditMode(false);
+      }
+    } else {
+      if (!typing) inputEl.value = '';
+      showDiaryEditMode(true);
     }
 
-    document.getElementById('habit-progress').textContent = done + '/9';
-    document.getElementById('habit-progress-bar').style.width = ((done / 9) * 100) + '%';
+    // 历史便签（按日期倒序；今天已显示在上方，故排除）
+    var past = [];
+    for (var i = 0; i < APP.diary.length; i++) {
+      if (APP.diary[i].date !== today) past.push(APP.diary[i]);
+    }
+    past.sort(function(a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
 
-    var msgs = [
-      '今天也从小小的打卡开始吧~ 🐻‍❄️',
-      '好的开始是成功的一半！💪',
-      '已经完成一些啦真棒！✨',
-      '超过一半了厉害！🎉',
-      '马上就能全部完成冲冲冲！🚀',
-      '今天超自律继续保持！💝',
-      '太棒了几乎全部完成！🌟',
-      '只差最后一项完美收官！🎯',
-      '全部完成！你是最棒的自嘲熊也佩服！👑🏆'
-    ];
-    document.getElementById('habit-encourage').textContent = msgs[Math.min(done, 8)];
-
-    if (done === 9 && APP.dpApiKey && !SYNC.applyingRemote) fetchDPHabitPraise();
-
-    // 渲染方块
-    var grid = document.getElementById('habits-grid');
+    var notesEl = document.getElementById('diary-notes');
+    var emptyEl = document.getElementById('diary-empty');
+    if (past.length === 0) {
+      notesEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
     var html = '';
-    for (var j = 0; j < HABITS.length; j++) {
-      var h = HABITS[j];
-      var isDone = habits[h.id] === true;
-      html += '<div class="habit-item card' + (isDone ? ' done' : '') + '" ' +
-        'onclick="toggleHabit(\'' + h.id + '\')" ' +
-        'style="margin:0;text-align:center;padding:12px 6px;' + (isDone ? '' : 'border:2px solid transparent;') + '">' +
-        '<div style="font-size:26px;">' + h.icon + '</div>' +
-        '<div style="font-weight:600;font-size:11px;color:#4A4A4A;margin-top:2px;">' + h.name + '</div>' +
-        '<div style="font-size:9px;color:' + (isDone ? '#FF7CB9' : '#C0C0C0') + ';margin-top:1px;">' +
-        (isDone ? '✅ 完成' : h.goal) + '</div></div>';
+    for (var j = 0; j < past.length; j++) {
+      var note = past[j];
+      var color = DIARY_NOTE_COLORS[j % DIARY_NOTE_COLORS.length];
+      html += '<div class="diary-note card" onclick="openDiaryView(\'' + note.id + '\')" ' +
+        'style="margin:0; padding:10px 12px; background:' + color + '; border:none; box-shadow:0 2px 8px rgba(200,160,140,0.18);">' +
+        '<div class="note-date">📌 ' + note.date + '</div>' +
+        '<div class="note-preview">' + escapeHTML(note.text) + '</div>' +
+        '</div>';
     }
-    grid.innerHTML = html;
+    notesEl.innerHTML = html;
+  }
 
-    var msgEl = document.getElementById('habit-message');
-    if (done === 9) msgEl.textContent = '🎉 全部完成！你今天太棒了！自嘲熊为你骄傲！🐻‍❄️💝';
-    else if (done >= 5) msgEl.textContent = '💪 已完成' + done + '项，超过一半啦加油！';
-    else if (done > 0) msgEl.textContent = '🌸 已完成' + done + '项，慢慢来坚持就是胜利~';
-    else msgEl.textContent = '💪 完成打卡是对自己最温柔的照顾~';
+  function openDiaryView(id) {
+    var entry = null;
+    for (var i = 0; i < APP.diary.length; i++) {
+      if (APP.diary[i].id === id) entry = APP.diary[i];
+    }
+    if (!entry) return;
+    document.getElementById('diary-view-date').textContent = entry.date;
+    document.getElementById('diary-view-text').textContent = entry.text;
+    document.getElementById('diary-view-modal').style.display = 'flex';
+  }
+
+  function closeDiaryView() {
+    document.getElementById('diary-view-modal').style.display = 'none';
   }
 
   // ============================================================
@@ -1502,7 +1568,7 @@
   }
 
   function clearAllData() {
-    if (!confirm('确定清除所有数据吗？此操作不可恢复！\n\n包括：经期记录、打卡记录、待办、设置')) return;
+    if (!confirm('确定清除所有数据吗？此操作不可恢复！\n\n包括：经期记录、日记、待办、设置')) return;
     localStorage.removeItem(STORAGE_KEY);
     APP = loadData();
     // 同步清空云端，再推送默认值（否则另一设备会把旧数据推回来）
@@ -1576,26 +1642,6 @@
     });
   }
 
-  function fetchDPHabitPraise() {
-    if (!APP.dpApiKey) return;
-
-    var today = todayStr();
-    var habits = APP.habitRecords[today] || {};
-    var doneNames = [];
-    for (var i = 0; i < HABITS.length; i++) {
-      if (habits[HABITS[i].id]) doneNames.push(HABITS[i].name);
-    }
-
-    callDeepSeekAPI(
-      '你是自嘲熊，用户全打卡了请用温暖自嘲语气表扬20-40字。',
-      '用户完成：' + doneNames.join('、') + '。表扬。'
-    ).then(function(result) {
-      if (result) {
-        document.getElementById('habit-message').textContent = '🤖 ' + result;
-      }
-    });
-  }
-
   function fetchDPPeriodCare() {
     if (!APP.dpApiKey) return;
     var pred = predictNextPeriod();
@@ -1642,7 +1688,7 @@
     // 初始化各页
     renderCalendar();
     showCareCategory('diet');
-    refreshHabitsPage();
+    renderDiaryPage();
     refreshTodoPage();
 
     setupTimers();
@@ -1672,7 +1718,7 @@
   // ============================================================
   //  十二、云同步（Supabase 实时共享，双方数据互通）
   // ============================================================
-  var MODULE_IDS = ['home', 'period', 'habits', 'todos', 'settings'];
+  var MODULE_IDS = ['home', 'period', 'diary', 'todos', 'settings'];
 
   var SYNC = {
     config: null,        // { url, anonKey, email }
@@ -1722,7 +1768,7 @@
       };
     },
     period:   function() { return { periodDates: APP.periodDates }; },
-    habits:   function() { return { habitRecords: APP.habitRecords }; },
+    diary:    function() { return { diary: APP.diary }; },
     todos:    function() { return { todos: APP.todos }; },
     settings: function() { return { dpApiKey: APP.dpApiKey, weatherApiKey: APP.weatherApiKey }; }
   };
@@ -1743,8 +1789,8 @@
       showCareCategory(currentCareCategory);
       updateQuickCards();
     },
-    habits: function() {
-      refreshHabitsPage();
+    diary: function() {
+      renderDiaryPage();
       updateQuickCards();
     },
     todos: function() {
@@ -1761,7 +1807,7 @@
   function isDefaultModule(mod) {
     if (mod === 'home')     return APP.coupleStartDate === DEFAULT_DATA.coupleStartDate && !APP.cityName;
     if (mod === 'period')   return APP.periodDates.length === 0;
-    if (mod === 'habits')   return Object.keys(APP.habitRecords).length === 0;
+    if (mod === 'diary')    return APP.diary.length === 0;
     if (mod === 'todos')    return APP.todos.length === 0;
     if (mod === 'settings') return !APP.dpApiKey && !APP.weatherApiKey;
     return true;
@@ -1772,7 +1818,7 @@
     if (!payload) return true;
     if (mod === 'home')     return (payload.coupleStartDate === undefined || payload.coupleStartDate === DEFAULT_DATA.coupleStartDate) && !payload.cityName;
     if (mod === 'period')   return !payload.periodDates || payload.periodDates.length === 0;
-    if (mod === 'habits')   return !payload.habitRecords || Object.keys(payload.habitRecords).length === 0;
+    if (mod === 'diary')    return !payload.diary || payload.diary.length === 0;
     if (mod === 'todos')    return !payload.todos || payload.todos.length === 0;
     if (mod === 'settings') return !payload.dpApiKey && !payload.weatherApiKey;
     return true;
