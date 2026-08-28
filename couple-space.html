@@ -219,17 +219,14 @@
       color: #B8A8A0;
       font-weight: 600;
     }
-    .diary-note .note-preview {
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      font-size: 12px;
+    .diary-note .note-line {
+      font-size: 11px;
       color: #6A5A50;
-      line-height: 1.6;
-      margin-top: 4px;
-      white-space: pre-wrap;
-      word-break: break-word;
+      line-height: 1.5;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* 日历格子 */
@@ -485,15 +482,22 @@
           <h3 style="margin:0; font-size:15px; color:#4A4A4A; font-weight:700;">📔 今日日记</h3>
           <span id="diary-today-date" style="font-size:11px; color:#B8A8A0;"></span>
         </div>
-        <textarea id="diary-input" rows="5" placeholder="今天有什么想记录的小事呢？开心的、难过的、想对TA说的话……都可以写下来 💕" style="width:100%;padding:12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:13px;line-height:1.7;margin-top:10px;outline:none;box-sizing:border-box;background:#FFFAFC;resize:vertical;font-family:inherit;"></textarea>
-        <div id="diary-today-view" style="display:none; background:#FFF9E3; border-radius:12px; padding:12px 14px; margin-top:10px;">
-          <p id="diary-today-text" style="margin:0; font-size:13px; color:#6A5A50; line-height:1.8; white-space:pre-wrap; word-break:break-word;"></p>
+        <textarea id="diary-input" rows="4" placeholder="今天有什么想记录的小事呢？开心的、难过的、想对TA说的话……都可以写下来 💕" style="width:100%;padding:12px;border:1.5px solid #FFE6EF;border-radius:12px;font-size:13px;line-height:1.7;margin-top:10px;outline:none;box-sizing:border-box;background:#FFFAFC;resize:vertical;font-family:inherit;"></textarea>
+        <div style="margin-top:10px;">
+          <p style="font-size:11px;color:#A0A0A0;margin:0 0 4px;">💗 今天的心情</p>
+          <div id="diary-mood-picker" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:10px;">
-          <button id="diary-save-btn" class="btn-primary" onclick="saveDiary()" style="flex:1; font-size:13px; padding:10px;">💾 保存今天的日记</button>
-          <button id="diary-edit-btn" onclick="editDiary()" style="display:none; flex:1; font-size:13px; padding:10px; background:#FFF1F5; color:#FF7CB9; border:1.5px solid #FFB3D0; border-radius:12px; cursor:pointer;">✏️ 编辑</button>
+        <div style="margin-top:10px;">
+          <p style="font-size:11px;color:#A0A0A0;margin:0 0 4px;">🌤 今天的天气</p>
+          <div id="diary-weather-picker" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
         </div>
+        <button id="diary-save-btn" class="btn-primary" onclick="saveDiary()" style="width:100%; margin-top:12px; font-size:13px; padding:10px;">💾 保存这条日记</button>
       </div>
+
+      <div style="margin:16px 16px 8px;">
+        <h3 style="margin:0; font-size:14px; color:#4A4A4A; font-weight:700;">📖 今天的记录</h3>
+      </div>
+      <div id="diary-today-list" style="margin:0 16px;"></div>
 
       <div style="margin:16px 16px 8px;">
         <h3 style="margin:0; font-size:14px; color:#4A4A4A; font-weight:700;">🗂 过去的日记</h3>
@@ -606,9 +610,7 @@
         <h3 style="margin:0; font-size:15px; color:#4A4A4A;">📔 <span id="diary-view-date"></span></h3>
         <button onclick="closeDiaryView()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#A0A0A0;padding:4px;">✕</button>
       </div>
-      <div style="background:#FFF9E3; border-radius:12px; padding:14px 16px; max-height:50vh; overflow-y:auto;">
-        <p id="diary-view-text" style="margin:0; font-size:13px; color:#6A5A50; line-height:1.9; white-space:pre-wrap; word-break:break-word;"></p>
-      </div>
+      <div id="diary-view-list" style="max-height:55vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;"></div>
     </div>
   </div>
 
@@ -915,7 +917,8 @@
       pEl.textContent = '点击查看';
     }
 
-    document.getElementById('quick-diary').textContent = getDiaryByDate(todayStr()) ? '已写 ✨' : '写一篇吧 📝';
+    var diaryCount = getDiaryEntries(todayStr()).length;
+    document.getElementById('quick-diary').textContent = diaryCount > 0 ? '已写 ' + diaryCount + ' 条 ✨' : '写一篇吧 📝';
 
     var activeTodos = APP.todos.filter(function(t) { return !t.completed; });
     document.getElementById('quick-todos').textContent = activeTodos.length + '项待办';
@@ -1278,115 +1281,166 @@
   }
 
   // ============================================================
-  //  七、日记
+  //  七、日记（一天可写多条，按日期归类，每条带心情+天气）
   // ============================================================
-  function getDiaryByDate(date) {
+  var DIARY_MOODS = [
+    { e: '😄', n: '开心' }, { e: '🥰', n: '幸福' }, { e: '😊', n: '不错' }, { e: '😐', n: '平静' },
+    { e: '🥱', n: '疲惫' }, { e: '😢', n: '难过' }, { e: '😡', n: '生气' }, { e: '🤔', n: '其他' }
+  ];
+  var DIARY_WEATHERS = [
+    { e: '☀️', n: '晴' }, { e: '⛅', n: '多云' }, { e: '☁️', n: '阴' }, { e: '🌧️', n: '雨' },
+    { e: '⛈️', n: '雷雨' }, { e: '❄️', n: '雪' }, { e: '🌫️', n: '雾' }, { e: '🌬️', n: '风' }
+  ];
+  var DIARY_NOTE_COLORS = ['#FFF9E3', '#FFF1F5', '#EFFAF3', '#F2F0FF'];
+  var diaryMood = '😄';
+  var diaryWeather = '☀️';
+
+  function getDiaryEntries(date) {
+    var out = [];
     for (var i = 0; i < APP.diary.length; i++) {
-      if (APP.diary[i].date === date) return APP.diary[i];
+      if (APP.diary[i].date === date) out.push(APP.diary[i]);
     }
-    return null;
+    return out;
   }
 
-  function showDiaryEditMode(isEdit) {
-    document.getElementById('diary-input').style.display = isEdit ? 'block' : 'none';
-    document.getElementById('diary-today-view').style.display = isEdit ? 'none' : 'block';
-    document.getElementById('diary-save-btn').style.display = isEdit ? 'block' : 'none';
-    document.getElementById('diary-edit-btn').style.display = isEdit ? 'none' : 'block';
+  function renderDiaryPickers() {
+    var mh = '';
+    for (var i = 0; i < DIARY_MOODS.length; i++) {
+      var m = DIARY_MOODS[i];
+      mh += '<button onclick="selectDiaryMood(\'' + m.e + '\')" style="padding:4px 8px;border-radius:20px;border:1.5px solid ' +
+        (m.e === diaryMood ? '#FF7CB9' : '#FFE6EF') + ';background:' + (m.e === diaryMood ? '#FFE6EF' : '#FFFFFF') +
+        ';font-size:12px;cursor:pointer;color:#4A4A4A;">' + m.e + ' ' + m.n + '</button>';
+    }
+    document.getElementById('diary-mood-picker').innerHTML = mh;
+
+    var wh = '';
+    for (var j = 0; j < DIARY_WEATHERS.length; j++) {
+      var w = DIARY_WEATHERS[j];
+      wh += '<button onclick="selectDiaryWeather(\'' + w.e + '\')" style="padding:4px 8px;border-radius:20px;border:1.5px solid ' +
+        (w.e === diaryWeather ? '#7CB9FF' : '#E3EFFF') + ';background:' + (w.e === diaryWeather ? '#E9F3FF' : '#FFFFFF') +
+        ';font-size:12px;cursor:pointer;color:#4A4A4A;">' + w.e + ' ' + w.n + '</button>';
+    }
+    document.getElementById('diary-weather-picker').innerHTML = wh;
   }
 
-  function editDiary() {
-    var today = getDiaryByDate(todayStr());
-    if (today) document.getElementById('diary-input').value = today.text;
-    showDiaryEditMode(true);
-  }
+  function selectDiaryMood(e) { diaryMood = e; renderDiaryPickers(); }
+  function selectDiaryWeather(e) { diaryWeather = e; renderDiaryPickers(); }
 
   function saveDiary() {
     var inputEl = document.getElementById('diary-input');
     var text = inputEl.value.trim();
     if (!text) { alert('写点什么再保存吧~ 📝'); return; }
-    var today = todayStr();
-    var entry = getDiaryByDate(today);
-    if (entry) {
-      entry.text = text;
-      entry.updatedAt = Date.now();
-    } else {
-      APP.diary.unshift({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        date: today,
-        text: text,
-        updatedAt: Date.now()
-      });
-    }
+    APP.diary.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: todayStr(),
+      text: text,
+      mood: diaryMood,
+      weather: diaryWeather,
+      updatedAt: Date.now()
+    });
+    inputEl.value = '';
     persistState('diary');
     renderDiaryPage();
     updateQuickCards();
   }
 
-  var DIARY_NOTE_COLORS = ['#FFF9E3', '#FFF1F5', '#EFFAF3', '#F2F0FF'];
+  function shortenText(s, n) {
+    var t = String(s || '').replace(/\s+/g, ' ');
+    return t.length > n ? t.slice(0, n) + '…' : t;
+  }
+
+  function diaryEntryCard(en) {
+    return '<div style="background:#FFF9E3;border-radius:12px;padding:10px 12px;position:relative;margin-bottom:8px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#B8A8A0;">' +
+      '<span>' + (en.mood || '😊') + ' ' + (en.weather || '☀️') + '</span>' +
+      '<button onclick="deleteDiaryEntry(\'' + en.id + '\')" style="background:none;border:none;color:#C8C0BA;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>' +
+      '<p style="margin:4px 0 0;font-size:12px;color:#6A5A50;line-height:1.7;white-space:pre-wrap;word-break:break-word;">' + escapeHTML(en.text) + '</p></div>';
+  }
 
   function renderDiaryPage() {
     var today = todayStr();
     document.getElementById('diary-today-date').textContent = today;
+    renderDiaryPickers();
 
-    var inputEl = document.getElementById('diary-input');
-    // 正在输入时不清空/覆盖输入框，防止远端同步把写到一半的文字冲掉
-    var typing = document.activeElement === inputEl && inputEl.value.trim() !== '';
-    var todayEntry = getDiaryByDate(today);
+    // 今天的记录（最新在前）
+    var todayEntries = getDiaryEntries(today);
+    var th = '';
+    for (var i = 0; i < todayEntries.length; i++) th += diaryEntryCard(todayEntries[i]);
+    document.getElementById('diary-today-list').innerHTML = th ||
+      '<p style="text-align:center;color:#D0D0D0;font-size:12px;padding:8px 0 16px;">今天还没写，写下第一条吧~</p>';
 
-    if (todayEntry) {
-      if (typing) {
-        showDiaryEditMode(true);
-      } else {
-        inputEl.value = todayEntry.text;
-        document.getElementById('diary-today-text').textContent = todayEntry.text;
-        showDiaryEditMode(false);
-      }
-    } else {
-      if (!typing) inputEl.value = '';
-      showDiaryEditMode(true);
+    // 过去的日记：按日期归类，每张便签是一个日期
+    var groups = {};
+    for (var j = 0; j < APP.diary.length; j++) {
+      var en = APP.diary[j];
+      if (en.date === today) continue;
+      if (!groups[en.date]) groups[en.date] = [];
+      groups[en.date].push(en);
     }
-
-    // 历史便签（按日期倒序；今天已显示在上方，故排除）
-    var past = [];
-    for (var i = 0; i < APP.diary.length; i++) {
-      if (APP.diary[i].date !== today) past.push(APP.diary[i]);
-    }
-    past.sort(function(a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+    var dates = Object.keys(groups).sort().reverse();
 
     var notesEl = document.getElementById('diary-notes');
     var emptyEl = document.getElementById('diary-empty');
-    if (past.length === 0) {
+    if (dates.length === 0) {
       notesEl.innerHTML = '';
       emptyEl.style.display = 'block';
+      emptyEl.innerHTML = APP.diary.length === 0
+        ? '<div style="font-size:40px;">🍃</div><p style="font-size:13px; margin:6px 0;">还没有写过日记</p><p style="font-size:11px;">从今天开始记录吧~</p>'
+        : '<div style="font-size:40px;">🌱</div><p style="font-size:13px; margin:6px 0;">过去的日记还空着</p><p style="font-size:11px;">坚持写下去，这里会越来越厚~</p>';
       return;
     }
     emptyEl.style.display = 'none';
-    var html = '';
-    for (var j = 0; j < past.length; j++) {
-      var note = past[j];
-      var color = DIARY_NOTE_COLORS[j % DIARY_NOTE_COLORS.length];
-      html += '<div class="diary-note card" onclick="openDiaryView(\'' + note.id + '\')" ' +
+    var gh = '';
+    for (var d = 0; d < dates.length; d++) {
+      var list = groups[dates[d]];
+      var color = DIARY_NOTE_COLORS[d % DIARY_NOTE_COLORS.length];
+      var lines = '';
+      var maxShow = 3;
+      for (var k = 0; k < list.length && k < maxShow; k++) {
+        lines += '<div class="note-line">' + (list[k].mood || '😊') + ' ' + (list[k].weather || '☀️') + ' ' + escapeHTML(shortenText(list[k].text, 20)) + '</div>';
+      }
+      if (list.length > maxShow) lines += '<div style="font-size:10px;color:#B8A8A0;margin-top:3px;">+ ' + (list.length - maxShow) + ' 条</div>';
+      gh += '<div class="diary-note card" onclick="openDiaryView(\'' + dates[d] + '\')" ' +
         'style="margin:0; padding:10px 12px; background:' + color + '; border:none; box-shadow:0 2px 8px rgba(200,160,140,0.18);">' +
-        '<div class="note-date">📌 ' + note.date + '</div>' +
-        '<div class="note-preview">' + escapeHTML(note.text) + '</div>' +
-        '</div>';
+        '<div class="note-date">📌 ' + dates[d] + ' · ' + list.length + ' 条</div>' + lines + '</div>';
     }
-    notesEl.innerHTML = html;
+    notesEl.innerHTML = gh;
   }
 
-  function openDiaryView(id) {
-    var entry = null;
-    for (var i = 0; i < APP.diary.length; i++) {
-      if (APP.diary[i].id === id) entry = APP.diary[i];
+  function openDiaryView(date) {
+    var list = getDiaryEntries(date);
+    document.getElementById('diary-view-date').textContent = date + '（' + list.length + ' 条）';
+    var html = '';
+    for (var i = 0; i < list.length; i++) {
+      html += '<div style="background:#FFF9E3;border-radius:12px;padding:12px 14px;position:relative;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#B8A8A0;">' +
+        '<span>' + (list[i].mood || '😊') + ' ' + (list[i].weather || '☀️') + '</span>' +
+        '<button onclick="deleteDiaryEntry(\'' + list[i].id + '\')" style="background:none;border:none;color:#C8C0BA;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>' +
+        '<p style="margin:6px 0 0;font-size:13px;color:#6A5A50;line-height:1.9;white-space:pre-wrap;word-break:break-word;">' + escapeHTML(list[i].text) + '</p></div>';
     }
-    if (!entry) return;
-    document.getElementById('diary-view-date').textContent = entry.date;
-    document.getElementById('diary-view-text').textContent = entry.text;
+    document.getElementById('diary-view-list').innerHTML = html;
     document.getElementById('diary-view-modal').style.display = 'flex';
   }
 
   function closeDiaryView() {
     document.getElementById('diary-view-modal').style.display = 'none';
+  }
+
+  function deleteDiaryEntry(id) {
+    if (!confirm('删除这条日记吗？')) return;
+    var date = null;
+    for (var i = 0; i < APP.diary.length; i++) {
+      if (APP.diary[i].id === id) { date = APP.diary[i].date; APP.diary.splice(i, 1); break; }
+    }
+    if (!date) return;
+    persistState('diary');
+    renderDiaryPage();
+    updateQuickCards();
+    var modal = document.getElementById('diary-view-modal');
+    if (modal.style.display === 'flex') {
+      if (getDiaryEntries(date).length === 0) closeDiaryView();
+      else openDiaryView(date);
+    }
   }
 
   // ============================================================
