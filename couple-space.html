@@ -1517,6 +1517,7 @@
     if (SYNC.client && SYNC.isSignedIn) {
       SYNC.client.from('nest_data').delete().in('id', MODULE_IDS).then(function() {
         SYNC.meta = {};
+        SYNC.lastPayload = {};
         saveSyncMeta();
         for (var i = 0; i < MODULE_IDS.length; i++) queuePush(MODULE_IDS[i]);
         flushPushes();
@@ -1670,6 +1671,7 @@
     applyingRemote: false,
     pending: {},         // 待推送模块集合
     meta: {},            // 模块 -> 服务端 updated_at
+    lastPayload: {},     // 模块 -> 最近推送/应用过的内容签名（防回声、判断是否真有新数据）
     debounceTimer: null,
     retryTimer: null,
     pollTimer: null
@@ -1972,9 +1974,34 @@
   }
 
   /** 远端变更应用到本地（不回推，防回环） */
+  /** 内容签名：递归按键排序后序列化（jsonb 返回的键序与本地构造不同，排序后一致才能比对） */
+  function canon(v) {
+    if (Array.isArray(v)) {
+      var a = [];
+      for (var i = 0; i < v.length; i++) a.push(canon(v[i]));
+      return a;
+    }
+    if (v && typeof v === 'object') {
+      var keys = Object.keys(v).sort();
+      var o = {};
+      for (var j = 0; j < keys.length; j++) o[keys[j]] = canon(v[keys[j]]);
+      return o;
+    }
+    return v;
+  }
+  function payloadSig(p) {
+    return JSON.stringify(canon(p));
+  }
+
   function applyRemoteModule(mod, payload, updatedAt) {
     if (!payload || MODULE_IDS.indexOf(mod) < 0) return;
-    if (updatedAt && SYNC.meta[mod] && updatedAt <= SYNC.meta[mod]) return; // 旧事件/自己推送的回声
+    if (SYNC.pending[mod]) return; // 本地有未推送的修改，不被远端旧数据覆盖（推送后以本地为准）
+    if (updatedAt && SYNC.meta[mod] && updatedAt < SYNC.meta[mod]) return; // 乱序的旧事件
+    var sig = payloadSig(payload);
+    if (sig === SYNC.lastPayload[mod]) { // 自己推送的回声，或内容与上次一致
+      if (updatedAt) SYNC.meta[mod] = updatedAt;
+      return;
+    }
     SYNC.applyingRemote = true;
     var keys = Object.keys(MODULE_PAYLOAD[mod]());
     for (var i = 0; i < keys.length; i++) {
@@ -1982,6 +2009,7 @@
     }
     if (mod === 'home' && typeof APP.dailyQuote === 'string') APP.dailyQuote = scrubQuote(APP.dailyQuote); // 云端旧数据残留旧词，应用即清
     saveData(APP); // 直写本地，不走 persistState（不回推）
+    SYNC.lastPayload[mod] = sig;
     if (updatedAt) SYNC.meta[mod] = updatedAt;
     saveSyncMeta();
     SYNC.applyingRemote = false;
@@ -2018,6 +2046,8 @@
       }
       var data = res.data || [];
       for (var j = 0; j < data.length; j++) SYNC.meta[data[j].id] = data[j].updated_at;
+      // 记录刚推送的内容签名，自己的回声到达时据此跳过
+      for (var m = 0; m < rows.length; m++) SYNC.lastPayload[rows[m].id] = payloadSig(rows[m].payload);
       saveSyncMeta();
       setBadge('ok');
     }).catch(function(e) {
@@ -2049,7 +2079,9 @@
           queuePush(mod); needPush = true;
           continue;
         }
-        if (SYNC.meta[mod] && row.updated_at <= SYNC.meta[mod]) continue; // 不是新数据
+        // 不能只看 updated_at：行更新时服务端时间戳可能不变（默认值只在插入时写入），
+        // 是否应用由 applyRemoteModule 里的内容签名比较决定
+        if (SYNC.pending[mod]) continue; // 本地有未推送的修改，先推送后再说
         applyRemoteModule(mod, row.payload, row.updated_at);
       }
       if (needPush) flushPushes();
